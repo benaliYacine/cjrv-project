@@ -6,8 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/Swimming.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/Cycling.unity
+    guid: 066a3d2fbd852324899f972b4cecba1d
+  - enabled: 1
+    path: Assets/Scenes/Running.unity
+    guid: 7bd7b172ee3122e4594a7f60bf40d3a2
+  - enabled: 1
+    path: Assets/Scenes/HomeScreen.unity
+    guid: 7b081cf0fa868c04eb0efe4259522c42
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
