@@ -10,14 +10,22 @@ public class SpeedBoostTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Check if the entering object has the marche component and if this object is tagged as Boost
+        // Check if the entering object has either marche or movement_swim component
         if (gameObject.CompareTag("Boost"))
         {
-            marche playerMovement = other.GetComponent<marche>();
-            if (playerMovement != null)
+            // Try to get marche component
+            marche walkingMovement = other.GetComponent<marche>();
+            if (walkingMovement != null)
             {
-                playerMovement.ApplySpeedBoost(speedBoostMultiplier, boostDuration);
+                walkingMovement.ApplySpeedBoost(speedBoostMultiplier, boostDuration);
+            }
+
+            // Try to get movement_swim component
+            movement_swim swimmingMovement = other.GetComponent<movement_swim>();
+            if (swimmingMovement != null)
+            {
+                swimmingMovement.ApplySpeedBoost(speedBoostMultiplier, boostDuration);
             }
         }
     }
-} 
+}
