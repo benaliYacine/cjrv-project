@@ -3,22 +3,15 @@ using UnityEngine.SceneManagement;
 
 public class End : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("EndGoal"))
         {
+            // 1) Make sure the cursor is visible and unlocked
+            Cursor.visible    = true;
+            Cursor.lockState  = CursorLockMode.None;
+
+            // 2) Now load your end screen (scene index 5)
             SceneManager.LoadScene(5);
         }
     }

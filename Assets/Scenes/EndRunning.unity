@@ -1091,7 +1091,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86005c56d53abf6459ac81d5878828d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  winClip: {fileID: 0}
+  winClip: {fileID: 8300000, guid: 1fd071813c5b1fc4cbdd701723eb4cd9, type: 3}
   volume: 1
 --- !u!4 &1170189012
 Transform:
