@@ -5,12 +5,12 @@ using UnityEngine;
 public class marche : MonoBehaviour
 {
     // Animation component
-    Animation animations;
+    private Animation animations;
 
     // Movement speeds
-    public float walkV = 5f; // Walking speed
-    public float runV = 10f; // Running speed
-    public float jumpForce = 5f; // Jump force
+    public float walkV = 5f;  // Walking speed
+    public float runV = 10f;  // Running speed
+    public float jumpForce = 5f;    // Jump force
     public float gravityScale = 2f; // Increased gravity for faster fall
 
     // Speed boost variables
@@ -19,49 +19,69 @@ public class marche : MonoBehaviour
     private bool isBoosted = false;
 
     // Input keys for movement
-    public string inputFront = "w"; // Key for moving forward
-    public string inputBack = "s"; // Key for moving backward
-    public string inputLeft = "a"; // Key for strafing left
-    public string inputRight = "d"; // Key for strafing right
-    public string inputJump = "space"; // Key for jumping
+    public string inputFront = "w";
+    public string inputBack  = "s";
+    public string inputLeft  = "a";
+    public string inputRight = "d";
+    public string inputJump  = "space";
 
     // Physics components
     private Rigidbody rb;
     private bool isGrounded;
 
-    // Start is called before the first frame update
+    [Header("Footstep Audio")]
+    public AudioClip stepClip;      // assign your footstep loop clip here
+    [Tooltip("Overall footstep volume")]
+    public float stepVolume = 1f;
+    [Tooltip("Pitch multiplier when walking")]
+    public float walkPitch = 0.7f;
+    [Tooltip("Pitch multiplier when running")]
+    public float runPitch = 1f;
+    private AudioSource stepSource;
+
     void Start()
     {
         // Get components
-        animations = gameObject.GetComponent<Animation>();
-        rb = gameObject.GetComponent<Rigidbody>();
+        animations = GetComponent<Animation>();
+        rb         = GetComponent<Rigidbody>();
 
-        // Check if components are attached
         if (animations == null)
-        {
             Debug.LogError("Animation component is missing on " + gameObject.name);
-        }
         if (rb == null)
         {
             Debug.LogError("Rigidbody component is missing on " + gameObject.name);
             rb = gameObject.AddComponent<Rigidbody>();
-            rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
 
-        // Optimize Rigidbody for realistic physics
+        // Rigidbody setup
         rb.useGravity = true;
         rb.mass = 1f;
-        rb.linearDamping = 0f;
+        rb.linearDamping  = 0f;
         rb.angularDamping = 0.05f;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        // AudioSource setup
+        stepSource = GetComponent<AudioSource>();
+        if (stepSource == null)
+            stepSource = gameObject.AddComponent<AudioSource>();
+
+        if (stepClip != null)
+        {
+            stepSource.clip         = stepClip;
+            stepSource.loop         = true;
+            stepSource.playOnAwake  = false;
+            stepSource.spatialBlend = 0f;       // 2D sound
+            stepSource.volume       = stepVolume;
+        }
+        else
+        {
+            Debug.LogWarning("Step clip not assigned on " + gameObject.name);
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (animations == null || rb == null)
-        {
-            return; // Exit if components are missing
-        }
+        if (animations == null || rb == null) return;
 
         // Check if speed boost has expired
         if (isBoosted && Time.time >= boostEndTime)
@@ -70,7 +90,7 @@ public class marche : MonoBehaviour
             isBoosted = false;
         }
 
-        // Check if sprinting
+        // Determine if sprinting
         bool isSprinting = Input.GetKey(KeyCode.LeftShift) && Input.GetKey(inputFront);
 
         // Handle jumping
@@ -78,86 +98,70 @@ public class marche : MonoBehaviour
         {
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
             isGrounded = false;
-            Debug.Log("Jump triggered!");
         }
 
-        // Apply custom gravity scale for faster fall
+        // Custom gravity
         rb.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
 
-        // Move forward with speed boost
+        // Track movement input
+        bool movedThisFrame = false;
+
+        // Forward/back/strafe movement
+        float currentWalkSpeed = walkV * currentSpeedMultiplier;
+        float currentRunSpeed  = runV  * currentSpeedMultiplier;
+
         if (Input.GetKey(inputFront))
         {
-            float currentWalkSpeed = walkV * currentSpeedMultiplier;
-            float currentRunSpeed = runV * currentSpeedMultiplier;
+            float speed = isSprinting ? currentRunSpeed : currentWalkSpeed;
+            transform.Translate(0, 0, speed * Time.deltaTime, Space.Self);
+            animations.Play(isSprinting ? "run" : "walk");
+            movedThisFrame = true;
+        }
+        if (Input.GetKey(inputBack))
+        {
+            transform.Translate(0, 0, -currentWalkSpeed * Time.deltaTime, Space.Self);
+            animations.Play("walk");
+            movedThisFrame = true;
+        }
+        if (Input.GetKey(inputLeft))
+        {
+            transform.Translate(-currentWalkSpeed * Time.deltaTime, 0, 0, Space.Self);
+            animations.Play("walk");
+            movedThisFrame = true;
+        }
+        if (Input.GetKey(inputRight))
+        {
+            transform.Translate(currentWalkSpeed * Time.deltaTime, 0, 0, Space.Self);
+            animations.Play("walk");
+            movedThisFrame = true;
+        }
 
-            if (isSprinting)
+        // Stop animation if no movement keys
+        if (!movedThisFrame)
+            animations.Stop();
+
+        // FOOTSTEP AUDIO: adjust pitch & play/stop
+        if (stepSource.clip != null)
+        {
+            if (movedThisFrame)
             {
-                transform.Translate(0, 0, currentRunSpeed * Time.deltaTime);
-                if (!animations.IsPlaying("run"))
-                {
-                    animations.Stop();
-                    animations.Play("run");
-                }
+                stepSource.pitch = isSprinting ? runPitch : walkPitch;
+                if (!stepSource.isPlaying)
+                    stepSource.Play();
             }
             else
             {
-                transform.Translate(0, 0, currentWalkSpeed * Time.deltaTime);
-                if (!animations.IsPlaying("walk"))
-                {
-                    animations.Stop();
-                    animations.Play("walk");
-                }
+                if (stepSource.isPlaying)
+                    stepSource.Stop();
             }
-        }
-
-        // Move backward with speed boost
-        if (Input.GetKey(inputBack))
-        {
-            float currentWalkSpeed = walkV * currentSpeedMultiplier;
-            transform.Translate(0, 0, -currentWalkSpeed * Time.deltaTime);
-            if (!animations.IsPlaying("walk"))
-            {
-                animations.Stop();
-                animations.Play("walk");
-            }
-        }
-
-        // Strafe left with speed boost
-        if (Input.GetKey(inputLeft))
-        {
-            float currentWalkSpeed = walkV * currentSpeedMultiplier;
-            transform.Translate(-currentWalkSpeed * Time.deltaTime, 0, 0);
-            if (!animations.IsPlaying("walk"))
-            {
-                animations.Stop();
-                animations.Play("walk");
-            }
-        }
-
-        // Strafe right with speed boost
-        if (Input.GetKey(inputRight))
-        {
-            float currentWalkSpeed = walkV * currentSpeedMultiplier;
-            transform.Translate(currentWalkSpeed * Time.deltaTime, 0, 0);
-            if (!animations.IsPlaying("walk"))
-            {
-                animations.Stop();
-                animations.Play("walk");
-            }
-        }
-
-        // Stop animations when no keys are pressed
-        if (!Input.GetKey(inputFront) && !Input.GetKey(inputBack) &&
-            !Input.GetKey(inputLeft) && !Input.GetKey(inputRight))
-        {
-            animations.Stop();
         }
     }
 
-    // Check if character is grounded
+    // Ground check
     void OnCollisionStay(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        if (collision.gameObject.CompareTag("Ground") ||
+            collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = true;
         }
@@ -165,13 +169,14 @@ public class marche : MonoBehaviour
 
     void OnCollisionExit(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        if (collision.gameObject.CompareTag("Ground") ||
+            collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = false;
         }
     }
 
-    // Add this new method to handle speed boosts
+    // Called by SpeedBoostTrigger
     public void ApplySpeedBoost(float multiplier, float duration)
     {
         currentSpeedMultiplier = multiplier;
