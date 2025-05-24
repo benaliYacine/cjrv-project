@@ -1,35 +1,32 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 
 public class TimerUI : MonoBehaviour
 {
-    [Tooltip("Drag your TimerText UI Text here")]
+    [Tooltip("Drag your TimerText TMP component here")]
     public TMP_Text timerText;
 
     private float elapsed = 0f;
-    private bool running = true;
-    private bool isScene5 = false;
+    private bool running = false;
+
+    void Awake()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
 
     void Start()
     {
-        // Check if we're in scene 5
-        isScene5 = SceneManager.GetActiveScene().buildIndex == 5;
-        
-        if (isScene5)
-        {
-            // In scene 5, display the stored time
-            timerText.text = TimerData.finalTime.ToString("F2");
-            running = false;
-        }
-        else
-        {
-            // In other scenes, start the timer normally
-            elapsed = 0f;
-            running = true;
-            UpdateDisplay();
-        }
+        // Start your timer when the first gameplay scene comes up
+        // (Or call ResetTimer() manually from your GameManager)
+        running = true;
+        elapsed = 0f;
+        UpdateDisplay();
     }
 
     void Update()
@@ -37,41 +34,42 @@ public class TimerUI : MonoBehaviour
         if (!running) return;
 
         elapsed += Time.deltaTime;
-        UpdateDisplay();
-
-        // Store the current time in case we need to switch scenes
         TimerData.finalTime = elapsed;
+        UpdateDisplay();
     }
 
     private void UpdateDisplay()
     {
-        if (isScene5) return; // Don't update display in scene 5
-        
-        int minutes = (int)(elapsed / 60f);
-        int seconds = (int)(elapsed % 60f);
-        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        int m = (int)(elapsed / 60f);
+        int s = (int)(elapsed % 60f);
+        timerText.text = string.Format("{0:00}:{1:00}", m, s);
     }
 
-    /// <summary> Stop the timer and store the final time. </summary>
-    public void StopTimer()
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        running = false;
-        TimerData.finalTime = elapsed;
+        if (scene.name == "EndRunning")  
+        {
+            // stop and show the stored final time
+            running = false;
+            timerText.text = FormatTime(TimerData.finalTime);
+            // optional: disable this script so nothing else runs
+            enabled = false;
+        }
+        else
+        {
+            // fresh start
+            running = true;
+            elapsed = 0f;
+            UpdateDisplay();
+        }
+        // otherwise (e.g. intermediate levels) you can choose to keep counting
     }
 
-    /// <summary> Reset to 0:00 and restart. </summary>
-    public void ResetTimer()
+    private string FormatTime(float t)
     {
-        if (isScene5) return; // Don't reset in scene 5
-        
-        elapsed = 0f;
-        running = true;
-        UpdateDisplay();
-    }
-
-    public float GetElapsedTime()
-    {
-        return elapsed;
+        int m = (int)(t / 60f);
+        int s = (int)(t % 60f);
+        return string.Format("{0:00}:{1:00}", m, s);
     }
 }
 
@@ -79,4 +77,3 @@ public static class TimerData
 {
     public static float finalTime;
 }
-
