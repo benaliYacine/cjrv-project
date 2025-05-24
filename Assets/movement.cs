@@ -13,6 +13,11 @@ public class marche : MonoBehaviour
     public float jumpForce = 5f; // Jump force
     public float gravityScale = 2f; // Increased gravity for faster fall
 
+    // Speed boost variables
+    private float currentSpeedMultiplier = 1f;
+    private float boostEndTime = 0f;
+    private bool isBoosted = false;
+
     // Input keys for movement
     public string inputFront = "w"; // Key for moving forward
     public string inputBack = "s"; // Key for moving backward
@@ -58,6 +63,13 @@ public class marche : MonoBehaviour
             return; // Exit if components are missing
         }
 
+        // Check if speed boost has expired
+        if (isBoosted && Time.time >= boostEndTime)
+        {
+            currentSpeedMultiplier = 1f;
+            isBoosted = false;
+        }
+
         // Check if sprinting
         bool isSprinting = Input.GetKey(KeyCode.LeftShift) && Input.GetKey(inputFront);
 
@@ -72,12 +84,15 @@ public class marche : MonoBehaviour
         // Apply custom gravity scale for faster fall
         rb.AddForce(Physics.gravity * (gravityScale - 1), ForceMode.Acceleration);
 
-        // Move forward
+        // Move forward with speed boost
         if (Input.GetKey(inputFront))
         {
+            float currentWalkSpeed = walkV * currentSpeedMultiplier;
+            float currentRunSpeed = runV * currentSpeedMultiplier;
+
             if (isSprinting)
             {
-                transform.Translate(0, 0, runV * Time.deltaTime);
+                transform.Translate(0, 0, currentRunSpeed * Time.deltaTime);
                 if (!animations.IsPlaying("run"))
                 {
                     animations.Stop();
@@ -86,7 +101,7 @@ public class marche : MonoBehaviour
             }
             else
             {
-                transform.Translate(0, 0, walkV * Time.deltaTime);
+                transform.Translate(0, 0, currentWalkSpeed * Time.deltaTime);
                 if (!animations.IsPlaying("walk"))
                 {
                     animations.Stop();
@@ -95,10 +110,11 @@ public class marche : MonoBehaviour
             }
         }
 
-        // Move backward
+        // Move backward with speed boost
         if (Input.GetKey(inputBack))
         {
-            transform.Translate(0, 0, -walkV * Time.deltaTime);
+            float currentWalkSpeed = walkV * currentSpeedMultiplier;
+            transform.Translate(0, 0, -currentWalkSpeed * Time.deltaTime);
             if (!animations.IsPlaying("walk"))
             {
                 animations.Stop();
@@ -106,10 +122,11 @@ public class marche : MonoBehaviour
             }
         }
 
-        // Strafe left
+        // Strafe left with speed boost
         if (Input.GetKey(inputLeft))
         {
-            transform.Translate(-walkV * Time.deltaTime, 0, 0);
+            float currentWalkSpeed = walkV * currentSpeedMultiplier;
+            transform.Translate(-currentWalkSpeed * Time.deltaTime, 0, 0);
             if (!animations.IsPlaying("walk"))
             {
                 animations.Stop();
@@ -117,10 +134,11 @@ public class marche : MonoBehaviour
             }
         }
 
-        // Strafe right
+        // Strafe right with speed boost
         if (Input.GetKey(inputRight))
         {
-            transform.Translate(walkV * Time.deltaTime, 0, 0);
+            float currentWalkSpeed = walkV * currentSpeedMultiplier;
+            transform.Translate(currentWalkSpeed * Time.deltaTime, 0, 0);
             if (!animations.IsPlaying("walk"))
             {
                 animations.Stop();
@@ -151,5 +169,13 @@ public class marche : MonoBehaviour
         {
             isGrounded = false;
         }
+    }
+
+    // Add this new method to handle speed boosts
+    public void ApplySpeedBoost(float multiplier, float duration)
+    {
+        currentSpeedMultiplier = multiplier;
+        boostEndTime = Time.time + duration;
+        isBoosted = true;
     }
 }

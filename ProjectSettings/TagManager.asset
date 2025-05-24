@@ -7,6 +7,7 @@ TagManager:
   - Selectable
   - Ground
   - EndGoal
+  - Boost
   layers:
   - Default
   - TransparentFX
